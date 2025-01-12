@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
@@ -13,6 +14,9 @@
 
     <title>Controle KM - Veículos</title>
 
+    <!-- Bibliotecas para exportação -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
   <body>
   	
@@ -38,24 +42,21 @@
 			<div class="form-group">
 				<label for="motivo">Motivo:</label>
 				<textarea class="form-control border-info" id="motivo" name="motivo" placeholder="Motivo de utilização do veículo" rows="1"></textarea>
-				
 			</div>
 			<div class="form-group">
 				<label for="quilometragem_saida">KM de Saída:</label>
 				<input class="form-control border-info" type="number" id="quilometragem_saida" name="quilometragem_saida" placeholder="Quilometragem de saída">
 			</div>
-
 			<div class="form-group">
 				<label for="quilometragem_chegada">KM de Chegada:</label>
 				<input class="form-control border-info" type="number" id="quilometragem_chegada" name="quilometragem_chegada" placeholder="Quilometragem de chegada">
 			</div>
 
 			<div class="row pt-3">
-				<div class=" mr-auto ml-auto">
-					<input id="btn-registrar" type="submit" class="btn btn-outline-info btn-lg text-uppercase pl-5 pr-5 text-monospace" value="Registrar">
+				<div class="mr-auto ml-auto">
+					<input id="btn-registrar" type="button" class="btn btn-outline-info btn-lg text-uppercase pl-5 pr-5 text-monospace" value="Registrar" onclick="adicionarRegistro()">
 				</div>
 			</div>
-
 		</form><!-- Fim do formulário-->
 
 		<hr class="text-info bg-info">
@@ -63,8 +64,8 @@
 		<div class="pt-3">
 			<h1 class="text-uppercase text-center text-info text-monospace">Registros</h1><!-- Tabela para exibir os registros -->
 			<div class="row pt-3">
-				<table class="table table-sm-responsive col-12">
-					<thead class="table-dark border-dark t-0 m-0 ">
+				<table class="table table-sm-responsive col-12" id="registros-table">
+					<thead class="table-dark border-dark t-0 m-0">
 					<tr>
 						<th scope="col">Usuário</th>
 						<th scope="col">Data</th>
@@ -72,21 +73,98 @@
 						<th scope="col">KM Saída</th>
 						<th scope="col">KM Chegada</th>
 					</tr>
-					<script src="script\script.js"></script>
 					</thead>
+					<tbody>
+					</tbody>
 				</table>
+			</div>
+			<div class="row">
+				<div class="col text-center">
+					<button class="btn btn-info m-2" onclick="exportToPDF()">Exportar para PDF</button>
+					<button class="btn btn-info m-2" onclick="exportToExcel()">Exportar para Excel</button>
+				</div>
 			</div>
 		</div>
 	</div>
 
+    <!-- JavaScript -->
+    <script>
+      function adicionarRegistro() {
+        const usuario = document.getElementById("usuario").value;
+        const data = document.getElementById("data").value;
+        const motivo = document.getElementById("motivo").value;
+        const kmSaida = document.getElementById("quilometragem_saida").value;
+        const kmChegada = document.getElementById("quilometragem_chegada").value;
+
+        if (usuario && data && motivo && kmSaida && kmChegada) {
+          const tableBody = document.querySelector("#registros-table tbody");
+          const newRow = document.createElement("tr");
+
+          newRow.innerHTML = `
+            <td>${usuario}</td>
+            <td>${data}</td>
+            <td>${motivo}</td>
+            <td>${kmSaida}</td>
+            <td>${kmChegada}</td>
+          `;
+          tableBody.appendChild(newRow);
+
+          // Limpa os campos do formulário
+          document.getElementById("usuario").value = "";
+          document.getElementById("data").value = "";
+          document.getElementById("motivo").value = "";
+          document.getElementById("quilometragem_saida").value = "";
+          document.getElementById("quilometragem_chegada").value = "";
+        } else {
+          alert("Preencha todos os campos!");
+        }
+      }
+
+      function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const table = document.getElementById("registros-table");
+        const rows = table.querySelectorAll("tr");
+
+        doc.text("Registros de Utilização de Veículos", 10, 10);
+        let y = 20;
+
+        rows.forEach(row => {
+          const cols = row.querySelectorAll("td, th");
+          let x = 10;
+          cols.forEach(col => {
+            doc.text(col.innerText, x, y);
+            x += 50;
+          });
+          y += 10;
+        });
+
+        doc.save("registros.pdf");
+      }
+
+      function exportToExcel() {
+        const table = document.getElementById("registros-table");
+        const rows = table.querySelectorAll("tr");
+        const data = [];
+
+        rows.forEach(row => {
+          const cols = row.querySelectorAll("td, th");
+          const rowData = [];
+          cols.forEach(col => rowData.push(col.innerText));
+          data.push(rowData);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+
+        XLSX.writeFile(workbook, "registros.xlsx");
+      }
+    </script>
+
     <!-- JavaScript (Opcional) -->
-    <!-- jQuery primeiro, depois Popper.js, depois Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6zBWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
   </body>
 </html>
-
-
-
-
